@@ -1,0 +1,33 @@
+{
+    "dataset": "indian_liver_patient.csv",
+    "training_samples": 650,
+    "testing_samples": 114,
+    "smote_enabled": true,
+    "random_forest_trees": 200,
+    "accuracy": 0.7368421052631579,
+    "accuracy_pct": "73.68%",
+    "precision": 0.7865168539325843,
+    "precision_pct": "78.65%",
+    "recall": 0.8641975308641975,
+    "recall_pct": "86.42%",
+    "f1_score": 0.8235294117647058,
+    "f1_score_pct": "82.35%",
+    "roc_auc": 0.7665544332210998,
+    "roc_auc_pct": "76.66%",
+    "confusion_matrix": {
+        "true_negative": 14,
+        "false_positive": 19,
+        "false_negative": 11,
+        "true_positive": 70,
+        "matrix": [
+            [
+                14,
+                19
+            ],
+            [
+                11,
+                70
+            ]
+        ]
+    }
+}

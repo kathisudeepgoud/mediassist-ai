@@ -1,0 +1,42 @@
+{
+    "model_name": "Random Forest",
+    "model_version": "diabetes_rf_v1",
+    "dataset_name": "diabetes_prediction_dataset.csv",
+    "target_column": "diabetes",
+    "raw_features": [
+        "gender",
+        "age",
+        "hypertension",
+        "heart_disease",
+        "smoking_history",
+        "bmi",
+        "HbA1c_level",
+        "blood_glucose_level"
+    ],
+    "transformed_features": [
+        "age",
+        "hypertension",
+        "heart_disease",
+        "bmi",
+        "HbA1c_level",
+        "blood_glucose_level",
+        "gender_Female",
+        "gender_Male",
+        "gender_Other",
+        "smoking_history_No Info",
+        "smoking_history_current",
+        "smoking_history_ever",
+        "smoking_history_former",
+        "smoking_history_never",
+        "smoking_history_not current"
+    ],
+    "sampling_method": "SMOTE",
+    "test_size": 0.2,
+    "random_state": 42,
+    "n_estimators": 200,
+    "training_samples_after_smote": 140260,
+    "test_samples": 19230,
+    "evaluation_accuracy": 0.9563702548101924,
+    "evaluation_f1": 0.7530173682661172,
+    "evaluation_auc": 0.9639318844950299
+}

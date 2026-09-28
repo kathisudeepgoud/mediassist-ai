@@ -1,0 +1,33 @@
+{
+    "dataset": "framingham.csv",
+    "training_samples": 5754,
+    "testing_samples": 848,
+    "smote_enabled": true,
+    "random_forest_trees": 200,
+    "accuracy": 0.7924528301886793,
+    "accuracy_pct": "79.25%",
+    "precision": 0.2882882882882883,
+    "precision_pct": "28.83%",
+    "recall": 0.24806201550387597,
+    "recall_pct": "24.81%",
+    "f1_score": 0.26666666666666666,
+    "f1_score_pct": "26.67%",
+    "roc_auc": 0.6426723162014425,
+    "roc_auc_pct": "64.27%",
+    "confusion_matrix": {
+        "true_negative": 640,
+        "false_positive": 79,
+        "false_negative": 97,
+        "true_positive": 32,
+        "matrix": [
+            [
+                640,
+                79
+            ],
+            [
+                97,
+                32
+            ]
+        ]
+    }
+}

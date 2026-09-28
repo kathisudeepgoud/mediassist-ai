@@ -1,0 +1,12 @@
+{
+  "include": [
+    ".",
+    "fastapi-service",
+    "ml"
+  ],
+  "extraPaths": [
+    ".",
+    "fastapi-service"
+  ],
+  "reportMissingImports": "warning"
+}

@@ -1,0 +1,33 @@
+{
+    "dataset": "kidney_disease.csv",
+    "training_samples": 400,
+    "testing_samples": 80,
+    "smote_enabled": true,
+    "random_forest_trees": 200,
+    "accuracy": 1.0,
+    "accuracy_pct": "100.00%",
+    "precision": 1.0,
+    "precision_pct": "100.00%",
+    "recall": 1.0,
+    "recall_pct": "100.00%",
+    "f1_score": 1.0,
+    "f1_score_pct": "100.00%",
+    "roc_auc": 1.0,
+    "roc_auc_pct": "100.00%",
+    "confusion_matrix": {
+        "true_negative": 30,
+        "false_positive": 0,
+        "false_negative": 0,
+        "true_positive": 50,
+        "matrix": [
+            [
+                30,
+                0
+            ],
+            [
+                0,
+                50
+            ]
+        ]
+    }
+}
