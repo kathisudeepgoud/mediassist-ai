@@ -1,0 +1,7 @@
+export { AddPatientModal } from './AddPatientModal'
+export { DoctorOverviewTab } from './DoctorOverviewTab'
+export { DoctorPatientsTab } from './DoctorPatientsTab'
+export { DoctorAppointmentsTab } from './DoctorAppointmentsTab'
+export { DoctorReportsTab } from './DoctorReportsTab'
+export { DoctorSettingsTab } from './DoctorSettingsTab'
+export { DoctorPatientProfileView } from './DoctorPatientProfileView'

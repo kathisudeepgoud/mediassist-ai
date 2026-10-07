@@ -52,3 +52,8 @@ ENV/
 *.joblib
 *.h5
 *.onnx
+
+# Project overview guide & temporary review documents
+PROJECT_OVERVIEW*
+*.docx
+

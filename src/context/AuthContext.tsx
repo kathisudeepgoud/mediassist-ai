@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { api, getToken, setToken } from '@/services/api'
+import { api, getToken, setToken, getStoredUser, setStoredUser } from '@/services/api'
 
 export interface UserProfile {
   id: string
@@ -25,6 +25,22 @@ export interface UserProfile {
   smoking_habit?: string
   activity_level?: string
   dietary_preference?: string
+  hospitalName?: string
+  hospital_name?: string
+  specialization?: string
+  experienceYears?: number
+  experience_years?: number
+  qualification?: string
+  medicalLicense?: string
+  medical_license?: string
+  consultationFee?: number
+  consultation_fee?: number
+  clinicAddress?: string
+  clinic_address?: string
+  bio?: string
+  consultationType?: string
+  consultation_type?: string
+  availability?: string[]
 }
 
 export interface RegisterPatientData {
@@ -43,6 +59,22 @@ export interface RegisterPatientData {
   dietaryPreference?: string
   allergies?: string[]
   existingConditions?: string[]
+  hospitalName?: string
+  hospital_name?: string
+  specialization?: string
+  experienceYears?: number
+  experience_years?: number
+  qualification?: string
+  medicalLicense?: string
+  medical_license?: string
+  consultationFee?: number
+  consultation_fee?: number
+  clinicAddress?: string
+  clinic_address?: string
+  bio?: string
+  consultationType?: string
+  consultation_type?: string
+  availability?: string[]
 }
 
 interface AuthContextValue {
@@ -58,23 +90,44 @@ interface AuthContextValue {
 const AuthContext = React.createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<UserProfile | null>(null)
+  const [user, setUser] = React.useState<UserProfile | null>(() => getStoredUser())
   const [token, setTokenState] = React.useState<string | null>(() => getToken())
-  const [loading, setLoading] = React.useState<boolean>(true)
+  const [loading, setLoading] = React.useState<boolean>(() => {
+    const hasToken = !!getToken()
+    const hasUser = !!getStoredUser()
+    return hasToken && !hasUser
+  })
 
   const fetchUser = React.useCallback(async () => {
-    if (!getToken()) {
+    const currentToken = getToken()
+    if (!currentToken) {
       setUser(null)
+      setStoredUser(null)
       setLoading(false)
       return
     }
     try {
       const res = await api.getCurrentUser()
-      setUser(res.user)
-    } catch {
-      setToken(null)
-      setTokenState(null)
-      setUser(null)
+      if (res?.user) {
+        setUser(res.user)
+        setStoredUser(res.user)
+      }
+    } catch (err: any) {
+      const msg = (err?.message || '').toLowerCase()
+      const isAuthError =
+        msg.includes('401') ||
+        msg.includes('403') ||
+        msg.includes('unauthorized') ||
+        msg.includes('token') ||
+        msg.includes('invalid') ||
+        msg.includes('expired')
+
+      if (isAuthError) {
+        setToken(null)
+        setTokenState(null)
+        setUser(null)
+        setStoredUser(null)
+      }
     } finally {
       setLoading(false)
     }
@@ -89,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(res.token)
     setTokenState(res.token)
     setUser(res.user)
+    setStoredUser(res.user)
     return res.user
   }
 
@@ -105,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(res.token)
     setTokenState(res.token)
     setUser(res.user)
+    setStoredUser(res.user)
     return res.user
   }
 
@@ -112,12 +167,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null)
     setTokenState(null)
     setUser(null)
+    setStoredUser(null)
   }
 
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated: !!user,
+        isAuthenticated: !!(user || token),
         user,
         loading,
         login,

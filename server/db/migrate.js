@@ -55,7 +55,7 @@ async function runMigration() {
 
     // Backfill assigned_doctor_id for any patient users lacking assigned_doctor_id
     const firstDoctorRes = await pool.query(
-      `SELECT doctor_id FROM users WHERE role = 'doctor' AND doctor_id IS NOT NULL ORDER BY created_at ASC LIMIT 1`
+      `SELECT id, doctor_id FROM users WHERE role = 'doctor' AND doctor_id IS NOT NULL ORDER BY created_at ASC LIMIT 1`
     );
     const defaultDoctorId = firstDoctorRes.rows.length > 0 ? firstDoctorRes.rows[0].doctor_id : 'D000001';
 
@@ -64,11 +64,40 @@ async function runMigration() {
       [defaultDoctorId]
     );
 
+    // Populate doctor_patients table from assigned_doctor_id
+    const patientDocRes = await pool.query(`
+      SELECT p.id as patient_id, d.id as doctor_id
+      FROM users p
+      JOIN users d ON UPPER(d.doctor_id) = UPPER(p.assigned_doctor_id)
+      WHERE p.role = 'patient' AND d.role = 'doctor'
+    `);
+
+    for (const row of patientDocRes.rows) {
+      await pool.query(`
+        INSERT INTO doctor_patients (doctor_id, patient_id, status)
+        VALUES ($1, $2, 'active')
+        ON CONFLICT (doctor_id, patient_id) DO NOTHING
+      `, [row.doctor_id, row.patient_id]);
+    }
+
+    // Set sample specialization and availability for registered doctors
+    await pool.query(`
+      UPDATE users 
+      SET specialization = CASE 
+            WHEN specialization IS NULL OR specialization = 'General Physician' THEN 'Consultant Physician & Cardiologist'
+            ELSE specialization 
+          END,
+          consultation_fee = COALESCE(consultation_fee, 500.00),
+          experience_years = COALESCE(experience_years, 10),
+          clinic_address = COALESCE(clinic_address, 'MedAssist Super Specialty Center, OPD Block B, Hyderabad')
+      WHERE role = 'doctor'
+    `);
+
     await pool.query(
       `UPDATE medical_reports SET source = 'Manual Entry', file_type = 'MANUAL' WHERE type LIKE '%Manual%' OR type LIKE '%Manual Health%' OR file_type = 'MANUAL'`
     );
 
-    console.log('[Migration] User role, ID, assigned_doctor_id & manual report source backfill completed successfully!');
+    console.log('[Migration] User role, ID, assigned_doctor_id, doctor_patients relationship & manual report source backfill completed successfully!');
   } catch (error) {
     console.error('[Migration] Migration failed:', error);
     process.exit(1);
@@ -78,3 +107,4 @@ async function runMigration() {
 }
 
 runMigration();
+

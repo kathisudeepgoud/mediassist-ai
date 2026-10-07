@@ -20,6 +20,27 @@ export function setToken(token: string | null) {
   }
 }
 
+export function getStoredUser(): any | null {
+  try {
+    const raw = localStorage.getItem('medassist_user')
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function setStoredUser(user: any | null) {
+  try {
+    if (user) {
+      localStorage.setItem('medassist_user', JSON.stringify(user))
+    } else {
+      localStorage.removeItem('medassist_user')
+    }
+  } catch {
+    /* noop */
+  }
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getToken()
   const headers: Record<string, string> = {
@@ -86,6 +107,22 @@ export const api = {
     dietaryPreference?: string
     allergies?: string[]
     existingConditions?: string[]
+    hospitalName?: string
+    hospital_name?: string
+    specialization?: string
+    experienceYears?: number
+    experience_years?: number
+    qualification?: string
+    medicalLicense?: string
+    medical_license?: string
+    consultationFee?: number
+    consultation_fee?: number
+    clinicAddress?: string
+    clinic_address?: string
+    bio?: string
+    consultationType?: string
+    consultation_type?: string
+    availability?: string[]
   }) =>
     request<{ token: string; user: any }>('/auth/register', {
       method: 'POST',
@@ -102,12 +139,47 @@ export const api = {
 
   // Doctor API
   getDoctorStats: () =>
-    request<{ doctorId: string; totalPatients: number; highRiskPatients: number; newAlerts: number }>('/doctor/stats'),
+    request<{ doctorId: string; totalPatients: number; highRiskPatients: number; newAlerts: number; upcomingAppointments?: number }>('/doctor/stats'),
+
+  getDoctorPatients: (search?: string) =>
+    request<{ patients: any[] }>('/doctor/patients' + (search ? `?search=${encodeURIComponent(search)}` : '')),
+
+  addDoctorPatient: (patientId: string, reason?: string) =>
+    request<{ message: string; relationship: any; patient: any }>('/doctor/patients', {
+      method: 'POST',
+      body: JSON.stringify({ patientId, reason }),
+    }),
+
+  removeDoctorPatient: (patientId: string) =>
+    request<{ message: string }>(`/doctor/patients/${encodeURIComponent(patientId)}`, {
+      method: 'DELETE',
+    }),
+
+  getDoctorPatientProfile: (patientId: string) =>
+    request<{
+      patient: any;
+      reports: any[];
+      reportSummary: any;
+      trends: any[];
+      diseaseRisks: any[];
+      dietPlan?: any;
+      appointments?: any[];
+      prescriptions?: any[];
+      messagesCount?: number;
+    }>(`/doctor/patient/${encodeURIComponent(patientId)}`),
 
   searchPatient: (patientId: string) =>
-    request<{ patient: any; reports: any[]; reportSummary: any; trends: any[]; diseaseRisks: any[] }>(
-      '/doctor/patient/search?patientId=' + encodeURIComponent(patientId)
-    ),
+    request<{
+      patient: any;
+      reports: any[];
+      reportSummary: any;
+      trends: any[];
+      diseaseRisks: any[];
+      dietPlan?: any;
+      appointments?: any[];
+      prescriptions?: any[];
+      messagesCount?: number;
+    }>('/doctor/patient/' + encodeURIComponent(patientId)),
 
   getDoctorAlerts: (status?: string) =>
     request<{ alerts: any[] }>('/doctor/alerts' + (status ? `?status=${encodeURIComponent(status)}` : '')),
@@ -116,6 +188,98 @@ export const api = {
     request<{ message: string; alert: any }>(`/doctor/alerts/${encodeURIComponent(alertId)}/review`, {
       method: 'PUT',
     }),
+
+  // Appointments API & Doctor Discovery
+  getAvailableDoctors: () =>
+    request<{ doctors: any[] }>('/appointments/doctors'),
+
+  getDoctorDetails: (doctorId: string, date?: string) =>
+    request<{ doctor: any; slots: { time: string; isAvailable: boolean }[] }>(
+      `/appointments/doctors/${encodeURIComponent(doctorId)}` + (date ? `?date=${encodeURIComponent(date)}` : '')
+    ),
+
+  bookAppointment: (data: {
+    doctorId: string;
+    appointmentDate: string;
+    appointmentTime: string;
+    appointmentType: 'online' | 'offline';
+    reason?: string;
+    fee?: number;
+    paymentMethod?: string;
+    paymentReference?: string;
+  }) =>
+    request<{ message: string; appointment: any; payment: any }>('/appointments/book', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getMyAppointments: (filters?: { status?: string; type?: string; date?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.type) params.set('type', filters.type);
+    if (filters?.date) params.set('date', filters.date);
+    const qs = params.toString();
+    return request<{ appointments: any[] }>('/appointments/my' + (qs ? `?${qs}` : ''));
+  },
+
+  getAppointmentById: (id: string) =>
+    request<{ appointment: any }>(`/appointments/${encodeURIComponent(id)}`),
+
+  updateAppointmentStatus: (id: string, data: { status: 'confirmed' | 'completed' | 'cancelled'; doctorNotes?: string }) =>
+    request<{ message: string; appointment: any }>(`/appointments/${encodeURIComponent(id)}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  // Messages API (Doctor <-> Patient)
+  getConversations: () =>
+    request<{ conversations: { partner: any; latestMessage: any; unreadCount: number; lastActivity: string }[] }>('/messages/conversations'),
+
+  getMessageThread: (otherUserId: string) =>
+    request<{ partner: any; messages: any[] }>(`/messages/${encodeURIComponent(otherUserId)}`),
+
+  sendMessage: (otherUserId: string, message: string, appointmentId?: string) =>
+    request<{ message: string; data: any }>(`/messages/${encodeURIComponent(otherUserId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ message, appointmentId }),
+    }),
+
+  markThreadRead: (otherUserId: string) =>
+    request<{ message: string }>(`/messages/read/${encodeURIComponent(otherUserId)}`, {
+      method: 'PUT',
+    }),
+
+  // Prescriptions API
+  uploadPrescription: (formData: FormData) =>
+    request<{ message: string; prescription: any }>('/prescriptions/upload', {
+      method: 'POST',
+      body: formData,
+    }),
+
+  getMyPrescriptions: () =>
+    request<{ prescriptions: any[] }>('/prescriptions/my'),
+
+  getPatientPrescriptions: (patientId: string) =>
+    request<{ prescriptions: any[] }>(`/prescriptions/patient/${encodeURIComponent(patientId)}`),
+
+  getPrescriptionDownloadUrl: (id: string) => {
+    return `${API_BASE_URL}/prescriptions/download/${encodeURIComponent(id)}`;
+  },
+
+  // Notifications API
+  getNotifications: () =>
+    request<{ notifications: any[]; unreadCount: number }>('/notifications'),
+
+  markNotificationRead: (id: string) =>
+    request<{ message: string; notification: any }>(`/notifications/${encodeURIComponent(id)}/read`, {
+      method: 'PUT',
+    }),
+
+  markAllNotificationsRead: () =>
+    request<{ message: string }>('/notifications/read-all', {
+      method: 'PUT',
+    }),
+
 
   // Profile & Settings
   getProfile: () => request<{ profile?: any; user?: any }>('/users/profile'),
@@ -136,6 +300,22 @@ export const api = {
     dietaryPreference: string
     allergies: string[]
     existingConditions: string[]
+    hospitalName: string
+    hospital_name: string
+    specialization: string
+    experienceYears: number
+    experience_years: number
+    qualification: string
+    medicalLicense: string
+    medical_license: string
+    consultationFee: number
+    consultation_fee: number
+    clinicAddress: string
+    clinic_address: string
+    bio: string
+    consultationType: string
+    consultation_type: string
+    availability: string[]
   }>) =>
     request<{ profile?: any; user?: any }>('/users/profile', {
       method: 'PUT',

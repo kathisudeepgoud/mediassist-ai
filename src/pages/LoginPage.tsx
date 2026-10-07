@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,9 +15,23 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const { login } = useAuth()
+  const { login, user: currentUser, isAuthenticated, loading: authLoading } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && currentUser) {
+      const from = (location.state as any)?.from?.pathname
+      if (from) {
+        navigate(from, { replace: true })
+      } else if (currentUser.role === 'doctor') {
+        navigate('/doctor-dashboard', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
+    }
+  }, [authLoading, isAuthenticated, currentUser, navigate, location])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,10 +40,13 @@ export default function LoginPage() {
     try {
       const user = await login(email, password)
       showToast('Welcome back', 'Signed in successfully.')
-      if (user?.role === 'doctor') {
-        navigate('/doctor-dashboard')
+      const from = (location.state as any)?.from?.pathname
+      if (from) {
+        navigate(from, { replace: true })
+      } else if (user?.role === 'doctor') {
+        navigate('/doctor-dashboard', { replace: true })
       } else {
-        navigate('/dashboard')
+        navigate('/dashboard', { replace: true })
       }
     } catch (err: any) {
       setError(err.message || 'Failed to sign in. Please check your credentials.')

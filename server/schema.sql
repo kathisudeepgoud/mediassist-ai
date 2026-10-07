@@ -272,6 +272,98 @@ CREATE TABLE IF NOT EXISTS patient_alerts (
     CONSTRAINT unique_report_disease_alert UNIQUE (report_id, disease)
 );
 
+-- 11. DOCTOR-PATIENT RELATIONSHIPS TABLE
+CREATE TABLE IF NOT EXISTS doctor_patients (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    doctor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    patient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    reason TEXT,
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_doctor_patient UNIQUE (doctor_id, patient_id)
+);
+
+-- 12. APPOINTMENTS TABLE
+CREATE TABLE IF NOT EXISTS appointments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    appointment_number VARCHAR(50) UNIQUE,
+    doctor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    patient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    appointment_date DATE NOT NULL,
+    appointment_time VARCHAR(50) NOT NULL,
+    appointment_type VARCHAR(20) NOT NULL CHECK (appointment_type IN ('online', 'offline')),
+    reason TEXT,
+    fee NUMERIC(10, 2) DEFAULT 500.00,
+    payment_status VARCHAR(20) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'successful', 'failed', 'refunded')),
+    appointment_status VARCHAR(20) DEFAULT 'confirmed' CHECK (appointment_status IN ('pending', 'confirmed', 'completed', 'cancelled')),
+    meeting_link TEXT,
+    clinic_address TEXT,
+    doctor_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 13. PAYMENTS TABLE
+CREATE TABLE IF NOT EXISTS payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    appointment_id UUID REFERENCES appointments(id) ON DELETE CASCADE,
+    patient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount NUMERIC(10, 2) NOT NULL,
+    payment_provider VARCHAR(50) DEFAULT 'razorpay',
+    payment_reference VARCHAR(100) NOT NULL,
+    payment_status VARCHAR(20) DEFAULT 'successful' CHECK (payment_status IN ('pending', 'successful', 'failed', 'refunded')),
+    payment_method VARCHAR(50) DEFAULT 'card',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 14. MESSAGES TABLE
+CREATE TABLE IF NOT EXISTS messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    receiver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 15. PRESCRIPTIONS TABLE
+CREATE TABLE IF NOT EXISTS prescriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prescription_number VARCHAR(50) UNIQUE,
+    doctor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    patient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size INT,
+    diagnosis TEXT,
+    instructions TEXT,
+    medications JSONB DEFAULT '[]'::jsonb,
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 16. NOTIFICATIONS TABLE
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50) DEFAULT 'info',
+    link TEXT,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Extra columns for Doctor profiles on users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS specialization VARCHAR(255) DEFAULT 'General Physician';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS clinic_address TEXT DEFAULT 'MedAssist Health Center, Suite 302, Medical City';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS consultation_fee NUMERIC(10, 2) DEFAULT 500.00;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS experience_years INT DEFAULT 8;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT 'Experienced healthcare specialist dedicated to evidence-based medical consulting and personalized patient care.';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS availability JSONB DEFAULT '["09:00 AM", "10:30 AM", "11:45 AM", "02:00 PM", "03:30 PM", "05:00 PM"]'::jsonb;
+
 -- INDEXES FOR PERFORMANCE
 CREATE INDEX IF NOT EXISTS idx_users_assigned_doctor ON users(assigned_doctor_id);
 CREATE INDEX IF NOT EXISTS idx_medical_reports_user ON medical_reports(user_id);
@@ -284,4 +376,17 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_user ON chat_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_patient_alerts_doctor ON patient_alerts(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_patient_alerts_status ON patient_alerts(status);
 CREATE INDEX IF NOT EXISTS idx_patient_alerts_patient ON patient_alerts(patient_id);
+CREATE INDEX IF NOT EXISTS idx_doctor_patients_doc ON doctor_patients(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_doctor_patients_pat ON doctor_patients(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_doc ON appointments(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_pat ON appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(appointment_date);
+CREATE INDEX IF NOT EXISTS idx_payments_appt ON payments(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_payments_pat ON payments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_prescriptions_doc ON prescriptions(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_prescriptions_pat ON prescriptions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+
 

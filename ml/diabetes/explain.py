@@ -3,46 +3,55 @@ Feature Importance & Model Explanation Module for Diabetes Risk Analysis ML Pipe
 MedAssist AI Project
 """
 
+import json
+import sys
+from pathlib import Path
+from typing import Any, List, Optional
+
+import joblib
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 import numpy as np
-from typing import List, Tuple
-from pathlib import Path
-import sys
+import pandas as pd
+import seaborn as sns
 
 MODULE_DIR = Path(__file__).resolve().parent
-if str(MODULE_DIR) not in sys.path:
-    sys.path.insert(0, str(MODULE_DIR))
+PROJECT_ROOT = MODULE_DIR.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-try:
-    import config
-except ImportError:
-    from ml.diabetes import config
+from ml.diabetes import config
 
 
 def generate_feature_importance(
-    model,
-    feature_names: List[str],
-    save_plot: bool = True
+    model: Any,
+    feature_names: Optional[List[str]] = None,
+    save_plot: bool = True,
+    save_results: bool = True
 ) -> pd.DataFrame:
     """
     Extracts feature importances from trained Random Forest model,
     prints sorted table, and saves feature_importance.png visual artifact.
     """
     if not hasattr(model, "feature_importances_"):
-        raise ValueError("Model does not provide feature_importances_ attribute.")
+        print("Warning: Model does not provide feature_importances_ attribute.")
+        return pd.DataFrame(columns=['Feature', 'Importance'])
 
     importances = model.feature_importances_
-    
-    # Handle length mismatch gracefully if any
-    if len(importances) != len(feature_names):
-        feature_names = [f"Feature_{i}" for i in range(len(importances))]
+    n_features = len(importances)
+
+    if feature_names is None or len(feature_names) == 0:
+        names = [f"Feature_{i}" for i in range(n_features)]
+    else:
+        names = list(feature_names)
+        if len(names) < n_features:
+            names.extend([f"Feature_{i}" for i in range(len(names), n_features)])
+        elif len(names) > n_features:
+            names = names[:n_features]
 
     df_importance = pd.DataFrame({
-        'Feature': feature_names,
+        'Feature': names,
         'Importance': importances
     }).sort_values(by='Importance', ascending=False).reset_index(drop=True)
 
@@ -51,18 +60,19 @@ def generate_feature_importance(
     print("=" * 45)
     print(f"\n{'Feature':<30} | {'Importance':<10}")
     print("-" * 45)
-    for idx, row in df_importance.iterrows():
+    for _, row in df_importance.head(15).iterrows():
         print(f"{row['Feature']:<30} | {row['Importance']:.6f}")
     print("=" * 45)
     print("\n[Disclaimer]: This feature ranking indicates feature influence in the trained model's")
     print("classification logic. It reflects statistical patterns in the dataset and does NOT imply")
     print("direct medical causation.\n")
 
-    if save_plot:
+    if save_plot or save_results:
         config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        plt.figure(figsize=(9, 6))
+        top_df = df_importance.head(15)
+        plt.figure(figsize=(9, max(5, len(top_df) * 0.35)))
         sns.barplot(
-            data=df_importance,
+            data=top_df,
             x='Importance',
             y='Feature',
             hue='Feature',
@@ -78,3 +88,25 @@ def generate_feature_importance(
         plt.close()
 
     return df_importance
+
+
+def main() -> None:
+    """Standalone feature importance explanation entry point."""
+    if not config.MODEL_PATH.exists():
+        print(f"Model not found at {config.MODEL_PATH}. Please run train.py first.")
+        return
+
+    print("Loading diabetes model artifacts...")
+    model = joblib.load(config.MODEL_PATH)
+
+    feature_names = []
+    if config.METADATA_PATH.exists():
+        with open(config.METADATA_PATH, "r") as f:
+            metadata = json.load(f)
+            feature_names = metadata.get("transformed_features", [])
+
+    generate_feature_importance(model, feature_names=feature_names)
+
+
+if __name__ == "__main__":
+    main()

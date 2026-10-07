@@ -10,6 +10,10 @@ const reportRoutes = require('./routes/report.routes');
 const doctorRoutes = require('./routes/doctor.routes');
 const dietRoutes = require('./routes/diet.routes');
 const assistantRoutes = require('./routes/assistant.routes');
+const appointmentRoutes = require('./routes/appointment.routes');
+const messageRoutes = require('./routes/message.routes');
+const prescriptionRoutes = require('./routes/prescription.routes');
+const notificationRoutes = require('./routes/notification.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -34,6 +38,11 @@ app.use('/api/doctor', doctorRoutes);
 app.use('/api/diet', dietRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/ai', assistantRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/notifications', notificationRoutes);
+
 
 // 404 JSON Handler for API routes
 app.use((req, res, next) => {

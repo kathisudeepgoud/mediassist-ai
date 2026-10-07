@@ -23,6 +23,22 @@ export interface UserProfile {
   smoking_habit?: string
   activity_level?: string
   dietary_preference?: string
+  hospitalName?: string
+  hospital_name?: string
+  specialization?: string
+  experienceYears?: number
+  experience_years?: number
+  qualification?: string
+  medicalLicense?: string
+  medical_license?: string
+  consultationFee?: number
+  consultation_fee?: number
+  clinicAddress?: string
+  clinic_address?: string
+  bio?: string
+  consultationType?: string
+  consultation_type?: string
+  availability?: string[]
 }
 
 export interface VitalReading {

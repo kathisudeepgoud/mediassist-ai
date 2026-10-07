@@ -178,6 +178,20 @@ const register = async (req, res, next) => {
       }
     }
 
+    // Doctor-specific fields
+    const hospitalName = req.body.hospitalName ?? req.body.hospital_name ?? (cleanRole === 'doctor' ? 'Apex Super Specialty Hospital' : null);
+    const specialization = req.body.specialization ?? (cleanRole === 'doctor' ? 'General Physician' : null);
+    const rawExperience = req.body.experienceYears ?? req.body.experience_years;
+    const experienceYears = rawExperience !== undefined && rawExperience !== null && rawExperience !== '' ? Number(rawExperience) : (cleanRole === 'doctor' ? 8 : null);
+    const qualification = req.body.qualification ?? (cleanRole === 'doctor' ? 'MBBS, MD' : null);
+    const medicalLicense = req.body.medicalLicense ?? req.body.medical_license ?? (cleanRole === 'doctor' ? 'MCI-84920' : null);
+    const rawFee = req.body.consultationFee ?? req.body.consultation_fee;
+    const consultationFee = rawFee !== undefined && rawFee !== null && rawFee !== '' ? Number(rawFee) : (cleanRole === 'doctor' ? 500 : null);
+    const clinicAddress = req.body.clinicAddress ?? req.body.clinic_address ?? (cleanRole === 'doctor' ? 'MedAssist Health Center, Suite 302, Medical City' : null);
+    const bio = req.body.bio ?? (cleanRole === 'doctor' ? 'Experienced healthcare specialist dedicated to evidence-based medical consulting and personalized patient care.' : null);
+    const consultationType = req.body.consultationType ?? req.body.consultation_type ?? (cleanRole === 'doctor' ? 'Both' : null);
+    const availability = req.body.availability ? JSON.stringify(req.body.availability) : (cleanRole === 'doctor' ? JSON.stringify(["09:00 AM", "10:30 AM", "11:45 AM", "02:00 PM", "03:30 PM", "05:00 PM"]) : null);
+
     // Hash password with bcrypt
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
@@ -185,12 +199,16 @@ const register = async (req, res, next) => {
     // Insert user into database
     const newUserResult = await query(
       `INSERT INTO users 
-       (name, email, password_hash, role, patient_id, doctor_id, assigned_doctor_id, phone, age, gender, blood_group, height_cm, weight_kg, smoking_habit, activity_level, dietary_preference, allergies, existing_conditions)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+       (name, email, password_hash, role, patient_id, doctor_id, assigned_doctor_id, phone, age, gender, blood_group, height_cm, weight_kg, smoking_habit, activity_level, dietary_preference, allergies, existing_conditions, hospital_name, specialization, experience_years, qualification, medical_license, consultation_fee, clinic_address, bio, consultation_type, availability)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28::jsonb)
        RETURNING id, name, email, role, patient_id as "patientId", doctor_id as "doctorId", assigned_doctor_id as "assignedDoctorId", 
                  phone, age, gender, blood_group as "bloodGroup", height_cm as "heightCm", weight_kg as "weightKg", 
                  smoking_habit as "smokingHabit", activity_level as "activityLevel", dietary_preference as "dietaryPreference", 
-                 allergies, existing_conditions as "existingConditions", photo_url as "photoUrl", created_at as "createdAt"`,
+                 allergies, existing_conditions as "existingConditions", photo_url as "photoUrl",
+                 hospital_name as "hospitalName", specialization, experience_years as "experienceYears",
+                 qualification, medical_license as "medicalLicense", consultation_fee as "consultationFee",
+                 clinic_address as "clinicAddress", bio, consultation_type as "consultationType", availability,
+                 created_at as "createdAt"`,
       [
         name,
         email.toLowerCase().trim(),
@@ -209,7 +227,17 @@ const register = async (req, res, next) => {
         parsedActivity,
         parsedDietary,
         JSON.stringify(parsedAllergies),
-        JSON.stringify(parsedConditions)
+        JSON.stringify(parsedConditions),
+        hospitalName,
+        specialization,
+        experienceYears,
+        qualification,
+        medicalLicense,
+        consultationFee,
+        clinicAddress,
+        bio,
+        consultationType,
+        availability
       ]
     );
 
@@ -277,7 +305,10 @@ const login = async (req, res, next) => {
       `SELECT id, name, email, password_hash, role, patient_id as "patientId", doctor_id as "doctorId", assigned_doctor_id as "assignedDoctorId", 
               phone, age, gender, blood_group as "bloodGroup", height_cm as "heightCm", weight_kg as "weightKg", 
               smoking_habit as "smokingHabit", activity_level as "activityLevel", dietary_preference as "dietaryPreference", 
-              allergies, existing_conditions as "existingConditions", photo_url as "photoUrl"
+              allergies, existing_conditions as "existingConditions", photo_url as "photoUrl",
+              hospital_name as "hospitalName", specialization, experience_years as "experienceYears",
+              qualification, medical_license as "medicalLicense", consultation_fee as "consultationFee",
+              clinic_address as "clinicAddress", bio, consultation_type as "consultationType", availability
        FROM users WHERE email = $1`,
       [email.toLowerCase().trim()]
     );
@@ -332,7 +363,11 @@ const getMe = async (req, res, next) => {
       `SELECT id, name, email, role, patient_id as "patientId", doctor_id as "doctorId", assigned_doctor_id as "assignedDoctorId", 
               phone, age, gender, blood_group as "bloodGroup", height_cm as "heightCm", weight_kg as "weightKg", 
               smoking_habit as "smokingHabit", activity_level as "activityLevel", dietary_preference as "dietaryPreference", 
-              allergies, existing_conditions as "existingConditions", photo_url as "photoUrl", created_at as "createdAt"
+              allergies, existing_conditions as "existingConditions", photo_url as "photoUrl",
+              hospital_name as "hospitalName", specialization, experience_years as "experienceYears",
+              qualification, medical_license as "medicalLicense", consultation_fee as "consultationFee",
+              clinic_address as "clinicAddress", bio, consultation_type as "consultationType", availability,
+              created_at as "createdAt"
        FROM users WHERE id = $1`,
       [userId]
     );

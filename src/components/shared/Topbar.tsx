@@ -154,12 +154,20 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
         {/* User Profile Dropdown */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-teal-200">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-full p-1 pl-2 outline-none hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-teal-200 cursor-pointer">
+            <Avatar className="h-9 w-9 border border-slate-200 shadow-xs">
+              <AvatarFallback className="bg-teal-50 text-teal-700 text-xs font-bold">{initials}</AvatarFallback>
             </Avatar>
+            <div className="hidden sm:flex flex-col text-left pr-1.5">
+              <span className="text-xs font-bold text-slate-800 leading-tight">
+                {user?.role === 'doctor' && !displayName.toLowerCase().startsWith('dr') ? `Dr. ${displayName}` : displayName}
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium leading-tight">
+                {user?.role === 'doctor' ? ((user as any)?.specialization || 'Psychotherapist') : 'Patient'}
+              </span>
+            </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border-slate-100">
             <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/profile')}>Profile</DropdownMenuItem>
@@ -170,7 +178,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                 logout()
                 navigate('/login')
               }}
-              className="text-rose-500 focus:bg-rose-100 focus:text-rose-500"
+              className="text-rose-500 focus:bg-rose-100 focus:text-rose-500 cursor-pointer"
             >
               Logout
             </DropdownMenuItem>

@@ -13,8 +13,10 @@ import {
   LogOut,
   X,
   Stethoscope,
-  Search,
-  Bell,
+  Users,
+  Calendar,
+  MessageSquare,
+  FileText,
 } from 'lucide-react'
 import { PulseMark } from '@/components/shared/PulseMark'
 import { cn } from '@/utils/cn'
@@ -24,22 +26,25 @@ import { api } from '@/services/api'
 
 const patientNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/upload', label: 'Report Upload', icon: Upload },
-  { to: '/reports', label: 'Report History', icon: History },
+  { to: '/reports', label: 'Reports', icon: FileText },
   { to: '/trends', label: 'Health Trends', icon: TrendingUp },
   { to: '/risk', label: 'Disease Risk', icon: ShieldAlert },
   { to: '/diet', label: 'Diet Planner', icon: Salad },
+  { to: '/appointments', label: 'Appointments', icon: Calendar },
+  { to: '/messages', label: 'Messages', icon: MessageSquare },
+  { to: '/prescriptions', label: 'Prescriptions', icon: FileText },
   { to: '/assistant', label: 'Health Assistant', icon: MessageCircleHeart },
 ]
 
 const doctorNavItems = [
-  { to: '/doctor-dashboard', label: 'Doctor Dashboard', icon: LayoutDashboard, hasBadge: true },
+  { to: '/doctor-dashboard?tab=overview', label: 'Dashboard', icon: LayoutDashboard, tabKey: 'overview' },
+  { to: '/doctor-dashboard?tab=appointments', label: 'Appointments', icon: Calendar, tabKey: 'appointments' },
+  { to: '/doctor-dashboard?tab=patients', label: 'Patients', icon: Users, tabKey: 'patients' },
+  { to: '/messages', label: 'Messages', icon: MessageSquare, exactRoute: true },
+  { to: '/doctor-dashboard?tab=reports', label: 'Report', icon: FileText, tabKey: 'reports' },
+  { to: '/settings', label: 'Settings', icon: Settings, exactRoute: true },
 ]
 
-const bottomItems = [
-  { to: '/settings', label: 'Settings', icon: Settings },
-  { to: '/profile', label: 'Profile', icon: User },
-]
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const { user, logout } = useAuth()
@@ -71,6 +76,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     .split(' ')
     .map((n) => n[0])
     .join('')
+    .slice(0, 2)
     .toUpperCase()
 
   const handleLogout = () => {
@@ -78,14 +84,17 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     navigate('/login')
   }
 
+  // Active check for doctor tabs
+  const currentTab = new URLSearchParams(location.search).get('tab') || 'overview'
+
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-mist-200 bg-white">
       <div className="flex items-center justify-between gap-2 px-5 py-5">
         <div className="flex items-center gap-2.5">
-          <PulseMark className="h-8 w-8" />
+          <PulseMark className="h-8 w-8 text-teal-600" />
           <div>
-            <p className="font-display text-sm font-semibold leading-none text-ink">MediAssist AI</p>
-            <p className="mt-1 text-[11px] text-ink-soft">{isDoctor ? 'Doctor Portal' : 'Your health, understood'}</p>
+            <p className="font-display text-base font-bold leading-none text-ink">Mind Care.</p>
+            <p className="mt-1 text-[11px] text-ink-soft">{isDoctor ? 'Doctor Portal' : 'MedAssist AI'}</p>
           </div>
         </div>
         {onClose && (
@@ -96,10 +105,23 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2" aria-label="Main navigation">
-        {navItems.map(({ to, label, icon: Icon, hasBadge }: any) => {
-          const isSelected = isDoctor
-            ? location.pathname.startsWith('/doctor-dashboard')
-            : location.pathname === to
+        {navItems.map((item: any) => {
+          const { to, label, icon: Icon, tabKey, exactRoute } = item
+          let isSelected = false
+
+          if (isDoctor) {
+            if (exactRoute) {
+              isSelected = location.pathname === to
+            } else if (location.pathname.startsWith('/doctor-dashboard')) {
+              isSelected = (currentTab === tabKey) || (tabKey === 'overview' && !currentTab)
+            }
+          } else {
+            if (to === '/reports') {
+              isSelected = location.pathname.startsWith('/reports') || location.pathname.startsWith('/upload')
+            } else {
+              isSelected = location.pathname === to
+            }
+          }
 
           return (
             <NavLink
@@ -108,16 +130,18 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
               onClick={onClose}
               className={
                 cn(
-                  'flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                  isSelected ? 'bg-teal-50 text-teal-700' : 'text-ink-soft hover:bg-mist-100 hover:text-ink'
+                  'flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors',
+                  isSelected
+                    ? 'bg-teal-50 text-teal-700 font-semibold shadow-xs'
+                    : 'text-[#64748B] hover:bg-mist-50 hover:text-ink'
                 )
               }
             >
               <div className="flex items-center gap-3">
-                <Icon className="h-4 w-4" />
+                <Icon className={cn('h-4 w-4', isSelected ? 'text-teal-700' : 'text-[#64748B]')} />
                 <span>{label}</span>
               </div>
-              {hasBadge && unreadAlerts > 0 && (
+              {tabKey === 'reports' && unreadAlerts > 0 && (
                 <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white shadow-xs">
                   {unreadAlerts}
                 </span>
@@ -127,40 +151,26 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         })}
       </nav>
 
-      <div className="space-y-1 border-t border-mist-200 px-3 py-3">
-        {bottomItems.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onClose}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                isActive ? 'bg-teal-50 text-teal-700' : 'text-ink-soft hover:bg-mist-100 hover:text-ink'
-              )
-            }
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </NavLink>
-        ))}
+
+
+      {/* User info at bottom */}
+      <div className="flex items-center justify-between border-t border-mist-200 px-4 py-3 mt-auto">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Avatar className="h-8 w-8 border border-slate-200">
+            <AvatarFallback className="text-xs bg-teal-50 text-teal-700 font-bold">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold text-ink">{displayName}</p>
+            <p className="truncate text-[10px] font-mono text-slate-500">{isDoctor ? `Dr. ${idCode}` : `ID: ${idCode}`}</p>
+          </div>
+        </div>
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-rose-100 hover:text-rose-500"
+          title="Logout"
+          className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
         >
           <LogOut className="h-4 w-4" />
-          Logout
         </button>
-      </div>
-
-      <div className="flex items-center gap-2.5 border-t border-mist-200 px-4 py-3">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-        </Avatar>
-        <div className="min-w-0">
-          <p className="truncate text-xs font-medium text-ink">{displayName}</p>
-          <p className="truncate text-[11px] font-mono text-teal-600 font-medium">{isDoctor ? `Doctor ID: ${idCode}` : `Patient ID: ${idCode}`}</p>
-        </div>
       </div>
     </aside>
   )

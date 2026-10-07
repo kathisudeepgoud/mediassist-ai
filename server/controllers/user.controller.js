@@ -13,7 +13,11 @@ const getProfile = async (req, res, next) => {
               blood_group as "bloodGroup", height_cm as "heightCm", 
               weight_kg as "weightKg", smoking_habit as "smokingHabit", activity_level as "activityLevel",
               dietary_preference as "dietaryPreference", allergies, existing_conditions as "existingConditions",
-              photo_url as "photoUrl", created_at as "createdAt", updated_at as "updatedAt"
+              photo_url as "photoUrl", hospital_name as "hospitalName", specialization,
+              experience_years as "experienceYears", qualification, medical_license as "medicalLicense",
+              consultation_fee as "consultationFee", clinic_address as "clinicAddress", bio,
+              consultation_type as "consultationType", availability,
+              created_at as "createdAt", updated_at as "updatedAt"
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -47,6 +51,18 @@ const updateProfile = async (req, res, next) => {
       ? JSON.stringify(req.body.existingConditions ?? req.body.existing_conditions)
       : null;
 
+    // Doctor profile updates
+    const hospitalNameVal = req.body.hospitalName ?? req.body.hospital_name ?? null;
+    const specializationVal = req.body.specialization ?? null;
+    const experienceYearsVal = req.body.experienceYears ?? req.body.experience_years ?? null;
+    const qualificationVal = req.body.qualification ?? null;
+    const medicalLicenseVal = req.body.medicalLicense ?? req.body.medical_license ?? null;
+    const consultationFeeVal = req.body.consultationFee ?? req.body.consultation_fee ?? null;
+    const clinicAddressVal = req.body.clinicAddress ?? req.body.clinic_address ?? null;
+    const bioVal = req.body.bio ?? null;
+    const consultationTypeVal = req.body.consultationType ?? req.body.consultation_type ?? null;
+    const availabilityVal = req.body.availability !== undefined ? JSON.stringify(req.body.availability) : null;
+
     const result = await query(
       `UPDATE users
        SET name = COALESCE($1, name),
@@ -62,13 +78,27 @@ const updateProfile = async (req, res, next) => {
            allergies = COALESCE($11::jsonb, allergies),
            existing_conditions = COALESCE($12::jsonb, existing_conditions),
            photo_url = COALESCE($13, photo_url),
+           hospital_name = COALESCE($14, hospital_name),
+           specialization = COALESCE($15, specialization),
+           experience_years = COALESCE($16, experience_years),
+           qualification = COALESCE($17, qualification),
+           medical_license = COALESCE($18, medical_license),
+           consultation_fee = COALESCE($19, consultation_fee),
+           clinic_address = COALESCE($20, clinic_address),
+           bio = COALESCE($21, bio),
+           consultation_type = COALESCE($22, consultation_type),
+           availability = COALESCE($23::jsonb, availability),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $14
+       WHERE id = $24
        RETURNING id, name, email, role, patient_id as "patientId", doctor_id as "doctorId", phone, age, gender, 
                  blood_group as "bloodGroup", height_cm as "heightCm", 
                  weight_kg as "weightKg", smoking_habit as "smokingHabit", activity_level as "activityLevel",
                  dietary_preference as "dietaryPreference", allergies, existing_conditions as "existingConditions",
-                 photo_url as "photoUrl", updated_at as "updatedAt"`,
+                 photo_url as "photoUrl", hospital_name as "hospitalName", specialization,
+                 experience_years as "experienceYears", qualification, medical_license as "medicalLicense",
+                 consultation_fee as "consultationFee", clinic_address as "clinicAddress", bio,
+                 consultation_type as "consultationType", availability,
+                 updated_at as "updatedAt"`,
       [
         name,
         phone,
@@ -83,6 +113,16 @@ const updateProfile = async (req, res, next) => {
         allergiesVal,
         conditionsVal,
         photoUrl,
+        hospitalNameVal,
+        specializationVal,
+        experienceYearsVal,
+        qualificationVal,
+        medicalLicenseVal,
+        consultationFeeVal,
+        clinicAddressVal,
+        bioVal,
+        consultationTypeVal,
+        availabilityVal,
         userId
       ]
     );

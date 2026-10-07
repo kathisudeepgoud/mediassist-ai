@@ -8,8 +8,6 @@ import { UploadZone } from '@/components/reports/UploadZone'
 import { ReportDetailCard } from '@/components/reports/ReportDetailCard'
 import { TermExplanationCard } from '@/components/reports/TermExplanationCard'
 import { mockTermExplanations } from '@/data/reports'
-import { ManualTrendsChart } from '@/components/manual/ManualTrendsChart'
-import { ManualParameterList } from '@/components/manual/ManualParameterList'
 import { ManualEntryModal } from '@/components/manual/ManualEntryModal'
 import type { ManualParameter, ManualParameterFormData } from '@/types/manualEntry'
 import { useToast } from '@/context/ToastContext'
@@ -335,38 +333,25 @@ export default function ReportUploadPage() {
 
       {/* Manual Entry Mode */}
       {uploadMode === 'manual' && (
-        <div className="space-y-6 animate-rise">
-          {/* Manual Entry Sub-Header */}
-          <div className="flex items-center justify-between rounded-2xl border border-mist-200 bg-white p-4 shadow-xs">
-            <div>
-              <h3 className="font-display text-base font-bold text-ink flex items-center gap-2">
-                <FileText className="h-4 w-4 text-teal-600" /> Manual Health Entry
-              </h3>
-              <p className="text-xs text-ink-soft">
-                Record your vitals manually. Entries created together are saved into a single report.
-              </p>
+        <Card className="border-mist-200 bg-white shadow-xs animate-rise">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-teal-600" /> Manual Health Metrics Entry
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Record your vital values, glucose, BP, cholesterol, or custom health metrics manually.
+                </CardDescription>
+              </div>
+              <Button
+                onClick={handleOpenAddModal}
+                className="bg-teal-600 hover:bg-teal-700 text-white font-bold gap-2 text-xs shadow-sm h-9 px-4 shrink-0"
+              >
+                <Plus className="h-4 w-4" /> Add Health Values
+              </Button>
             </div>
-            <Button
-              onClick={handleOpenAddModal}
-              className="bg-teal-600 hover:bg-teal-700 text-white font-bold gap-2 shadow-sm"
-            >
-              <Plus className="h-4 w-4" /> Add Values
-            </Button>
-          </div>
-
-          {/* Live Parameter Trend Graphs */}
-          <ManualTrendsChart parameters={parameters} />
-
-          {/* Sequence-Wise Manual Entry List */}
-          <ManualParameterList
-            parameters={parameters}
-            onAddClick={handleOpenAddModal}
-            onEdit={handleOpenEditModal}
-            onDelete={handleDeleteParameter}
-            onClearAll={handleClearAll}
-          />
-
-          {/* Manual Entry Modal */}
+          </CardHeader>
           <ManualEntryModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
@@ -374,7 +359,7 @@ export default function ReportUploadPage() {
             onSaveBatch={handleSaveBatchParameters}
             initialData={editingParameter}
           />
-        </div>
+        </Card>
       )}
     </div>
   )
